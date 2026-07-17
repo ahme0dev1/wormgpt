@@ -598,7 +598,7 @@
                     if (!apiKey) {
                         botResponse = "عذراً يا صديقي، يجب عليك إدخال مفتاح الـ API الخاص بـ Groq في القائمة الجانبية لتشغيل الخدمة!";
                     } else {
-                        // إرسال الطلب بشكل مباشر ومنسق لـ Groq مباشرة لتلافي مشاكل الحظر
+                        // الاتصال المباشر بجروك
                         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                             method: "POST",
                             headers: {
@@ -615,8 +615,18 @@
                             })
                         });
 
+                        // هنا التعديل الذكي لقراءة نص الخطأ الفعلي من جروك وعرضه للمستخدم لسهولة التوجيه والتصحيح
                         if (!response.ok) {
-                            throw new Error("حدث خطأ من سيرفر Groq. اتأكد إن الكود سليم ومفيش مسافات.");
+                            let errorMsg = "حدث خطأ من سيرفر Groq.";
+                            try {
+                                const errJson = await response.json();
+                                if (errJson && errJson.error && errJson.error.message) {
+                                    errorMsg += " <br><b>التفاصيل من السيرفر:</b> " + errJson.error.message;
+                                }
+                            } catch(e) {
+                                errorMsg += " كود الخطأ الرقمي: " + response.status;
+                            }
+                            throw new Error(errorMsg);
                         }
                         
                         const data = await response.json();
@@ -625,7 +635,7 @@
                 }
             } catch (error) {
                 console.error("Error catched:", error);
-                botResponse = `⚠️ خطأ أثناء توليد الرد: ${error.message}<br><br>تأكد من اختيار <b>منصة Groq</b>، ووضع الكود في مكانه بشكل صحيح دون أي تعديل أو مسافات إضافية!`;
+                botResponse = `⚠️ خطأ أثناء توليد الرد: ${error.message}`;
             }
 
             typingIndicator.style.display = "none";
